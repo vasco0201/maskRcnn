@@ -1250,8 +1250,11 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
         det = augmentation.to_deterministic()
         image = det.augment_image(image)
         # Change mask to np.uint8 because imgaug doesn't support np.bool
-        mask = det.augment_image(mask.astype(np.uint8),
-                                 hooks=imgaug.HooksImages(activator=hook))
+        if mask_shape[-1]==1:
+          mask = det.augment_image(mask.astype(np.uint8),hooks=imgaug.HooksImages(activator=hook))
+        else:
+          mask = det.augment_images(mask.astype(np.uint8),hooks=imgaug.HooksImages(activator=hook))
+
         # Verify that shapes didn't change
         assert image.shape == image_shape, "Augmentation shouldn't change image size"
         assert mask.shape == mask_shape, "Augmentation shouldn't change mask size"
@@ -2274,7 +2277,7 @@ class MaskRCNN():
             "*epoch*", "{epoch:04d}")
 
     def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
-              augmentation=None, custom_callbacks=None, no_augmentation_sources=None):
+              augmentation=None, custom_callbacks=None, no_augmentation_sources=None,extends_dataset=True):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
         learning_rate: The learning rate to train with
@@ -2323,13 +2326,19 @@ class MaskRCNN():
         if layers in layer_regex.keys():
             layers = layer_regex[layers]
 
-        # Data generators
-        train_generator = data_generator(train_dataset, self.config, shuffle=True,
-                                         augmentation=augmentation,
-                                         batch_size=self.config.BATCH_SIZE,
-                                         no_augmentation_sources=no_augmentation_sources)
-        val_generator = data_generator(val_dataset, self.config, shuffle=True,
-                                       batch_size=self.config.BATCH_SIZE)
+        if extends_dataset==True:
+          # Data generators
+          train_generator = data_generator(train_dataset, self.config, shuffle=True,
+                                           augmentation=augmentation,
+                                           batch_size=self.config.BATCH_SIZE,
+                                           no_augmentation_sources=no_augmentation_sources)
+          val_generator = data_generator(val_dataset, self.config, shuffle=True,
+                                         batch_size=self.config.BATCH_SIZE)
+        else:
+          train_generator = train_dataset
+          val_generator = val_dataset
+
+
 
         # Create log_dir if it does not exist
         if not os.path.exists(self.log_dir):
