@@ -14,7 +14,9 @@ except ImportError:
 
 
 def _parse_requirements(file_path):
+    print(file_path)
     pip_ver = pkg_resources.get_distribution('pip').version
+    print(pip_ver)
     pip_version = list(map(int, pip_ver.split('.')[:2]))
     if pip_version >= [6, 0]:
         raw = pip.req.parse_requirements(file_path,
@@ -26,7 +28,7 @@ def _parse_requirements(file_path):
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 try:
-    install_reqs = _parse_requirements("requirements.txt")
+    install_reqs = _parse_requirements("./requirements.txt")
 except Exception:
     logging.warning('Fail load requirements file, so using default ones.')
     install_reqs = []
